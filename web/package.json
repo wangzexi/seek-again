@@ -1,0 +1,47 @@
+{
+  "name": "@seekagain/web",
+  "version": "0.1.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "type": "tsc -p tsconfig.json",
+    "test": "bun test src",
+    "test:bdd": "bun test tests/bdd",
+    "test:bdd:real": "BDD_MODE=real bun test tests/bdd",
+    "dev": "bun --bun vite",
+    "build": "bun --bun vite build",
+    "lint": "oxlint src tests vite.config.ts"
+  },
+  "dependencies": {
+    "clsx": "2.1.1",
+    "fflate": "0.8.3",
+    "idb": "8.0.3",
+    "katex": "0.16.22",
+    "mdast-util-find-and-replace": "3.0.2",
+    "mdast-util-from-markdown": "2.0.3",
+    "mdast-util-gfm": "3.1.0",
+    "mdast-util-math": "3.0.0",
+    "mermaid": "11.10.1",
+    "micromark-extension-gfm": "3.0.0",
+    "micromark-extension-llm-math": "3.1.0",
+    "prismjs": "1.30.0",
+    "qrcode": "^1.5.4",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "zustand": "4.4.7"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.4.4",
+    "@types/katex": "^0.16.5",
+    "@types/mdast": "~4.0.3",
+    "@types/node": "~20.9.2",
+    "@types/prismjs": "^1.26.1",
+    "@types/qrcode": "^1.5.6",
+    "@types/react": "~18.3.1",
+    "@types/react-dom": "~18.3.0",
+    "@vitejs/plugin-react": "6.3.0",
+    "playwright-core": "^1.65.1",
+    "typescript": "7.0.2",
+    "vite": "8.3.8"
+  }
+}

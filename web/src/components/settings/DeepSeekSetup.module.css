@@ -1,0 +1,112 @@
+.dialog {
+  width: 450px;
+  max-height: calc(100dvh - 24px);
+  overflow: auto;
+}
+
+.body {
+  min-width: 0;
+}
+
+.intro {
+  margin: 0 0 20px;
+}
+
+.steps {
+  --step-marker-size: 26px;
+  display: grid;
+  gap: 16px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.step {
+  display: grid;
+  grid-template-columns: var(--step-marker-size) minmax(0, 1fr);
+  align-items: start;
+  column-gap: 12px;
+}
+
+.stepQr {
+  grid-column: 1 / -1;
+}
+
+.marker {
+  display: grid;
+  place-items: center;
+  width: var(--step-marker-size);
+  height: var(--step-marker-size);
+  border-radius: 50%;
+  background: var(--dsw-alias-interactive-bg-hover);
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.marker[data-complete] {
+  color: #15803d;
+
+  [data-ds-dark-theme] & {
+    color: #4ade80;
+  }
+}
+
+.skipMark {
+  width: 9px;
+  height: 2px;
+  border-radius: 1px;
+  background: currentColor;
+}
+
+.step[aria-current="step"] .marker {
+  background: var(--dsw-alias-button-primary-fill);
+  color: var(--dsw-static-neutral-bluish-00);
+}
+
+.detail {
+  min-width: 0;
+  padding-top: 2px;
+}
+
+.stepTitle {
+  color: var(--dsw-alias-label-primary);
+  font-weight: 500;
+}
+
+.status,
+.parsing {
+  margin: 4px 0 0;
+  color: var(--dsw-alias-label-secondary);
+  font-size: 13px;
+}
+
+.status[role="alert"] {
+  color: var(--dsw-alias-state-error-primary);
+}
+
+.parsing p {
+  margin: 0;
+}
+
+.parsing p + p {
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.transfer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  font-size: 13px;
+}
+
+.transfer progress {
+  flex: 1;
+  min-width: 0;
+  height: 8px;
+  accent-color: var(--dsw-alias-button-primary-fill);
+}

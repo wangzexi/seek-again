@@ -1,0 +1,40 @@
+name: Build container
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  container:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Build and verify the production image
+        run: |
+          docker build -t seek-again:test .
+          docker run -d --name seek-again-test -p 127.0.0.1:8090:8090 seek-again:test
+          trap 'docker logs seek-again-test; docker rm -f seek-again-test' EXIT
+          curl --fail --silent --show-error --connect-timeout 2 --retry 12 --retry-delay 1 --retry-all-errors http://127.0.0.1:8090/ -o /tmp/seek-again.html
+          asset=$(sed -nE 's/.*src="([^"]+\.js)".*/\1/p' /tmp/seek-again.html)
+          test -n "$asset"
+          curl --fail --silent --show-error "http://127.0.0.1:8090/${asset#/}" -o /dev/null
+          curl --fail --silent --show-error -H 'Accept-Encoding: br' -D /tmp/seek-again-headers "http://127.0.0.1:8090/${asset#./}" -o /dev/null
+          grep -qi '^content-encoding: br' /tmp/seek-again-headers
+          docker image inspect seek-again:test --format '{{.Size}} bytes on disk' | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Publish the verified image
+        if: github.repository == 'wangzexi/seek-again'
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+          image="ghcr.io/$GITHUB_REPOSITORY"
+          docker tag seek-again:test "$image:$GITHUB_SHA"
+          docker tag seek-again:test "$image:latest"
+          docker push "$image:$GITHUB_SHA"
+          docker push "$image:latest"

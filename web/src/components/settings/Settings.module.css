@@ -1,0 +1,477 @@
+.dialog {
+  --modal-header-gap: 7px;
+  width: 760px;
+  height: 500px;
+  max-height: calc(100vh - 32px);
+  padding: 19px 24px 22px;
+}
+
+.dialogMain {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  color: var(--dsw-alias-label-primary);
+}
+
+.navigation {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  gap: 4px;
+  width: 172px;
+  margin: 6px 12px 0 -12px;
+  padding-top: 4px;
+}
+
+.navItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-sizing: border-box;
+  width: calc(100% - 8px);
+  min-height: 40px;
+  margin: 0 4px;
+  padding: 9px 10px 9px 8px;
+  border: none;
+  border-radius: 12px;
+  background-color: transparent;
+  color: var(--dsw-alias-label-primary);
+  font: inherit;
+  font-size: 14px;
+  line-height: 22px;
+  text-align: left;
+  cursor: pointer;
+  user-select: none;
+  outline: none;
+  transition: background-color var(--ds-transition-duration) var(--ds-ease-in-out);
+
+  svg {
+    flex-shrink: 0;
+  }
+
+  &:hover,
+  &.navItemActive {
+    background-color: var(--dsw-alias-interactive-bg-hover);
+  }
+
+  &:focus-visible {
+    box-shadow: 0 0 0 2px var(--dsw-alias-button-primary-fill);
+  }
+}
+
+.content {
+  display: flex;
+  flex: 1 0 0;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  margin-right: -24px;
+  padding: 0 24px;
+  overflow-y: auto;
+}
+
+.dataActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.row:has(.dataActions) > .text {
+  padding-right: 0;
+}
+
+.dataTextButton {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+  padding: 0 6px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--dsw-alias-label-secondary);
+  font: inherit;
+  cursor: pointer;
+}
+
+.dataTextButton:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.dataTextButton:not(:disabled):hover {
+  text-decoration: underline;
+}
+
+.dataTextButton:focus-visible {
+  outline: 2px solid var(--dsw-alias-button-primary-fill);
+}
+
+.dataKeyReady {
+  gap: 4px;
+
+  svg {
+    color: #15803d;
+
+    [data-ds-dark-theme] & {
+      color: #4ade80;
+    }
+  }
+}
+
+.dataCleanup {
+  flex-shrink: 0;
+  margin-top: auto;
+  padding-top: 24px;
+}
+
+.cell {
+  box-sizing: border-box;
+  flex-shrink: 0;
+  min-height: 60px;
+  padding: 12px 0;
+  color: var(--dsw-alias-label-primary);
+  font-size: 14px;
+  line-height: 22px;
+
+  & + & {
+    box-shadow: inset 0 1px 0 0 var(--dsw-alias-border-l2-darkmode-thin);
+  }
+}
+
+.cell.dataCard + .cell.dataCard {
+  margin-top: 10px;
+  box-shadow: none;
+}
+
+.dataCleanup > .cell + .cell {
+  box-shadow: none;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.text {
+  display: flex;
+  flex: 1 0 0;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  padding-right: 48px;
+}
+
+.label {
+  font-size: 14px;
+  line-height: 22px;
+}
+
+.locationCell {
+  flex-wrap: wrap;
+}
+
+.locationCell .text {
+  flex: 1 0 auto;
+  padding-right: 8px;
+}
+
+.promptCell {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.promptInput {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 96px;
+  padding: 10px 12px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 10px;
+  background: var(--dsw-alias-bg-base);
+  color: var(--dsw-alias-label-primary);
+  font: inherit;
+  line-height: 1.5;
+  resize: vertical;
+
+  &::placeholder {
+    color: var(--dsw-alias-label-tertiary);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--dsw-alias-button-primary-fill);
+    outline-offset: -2px;
+  }
+}
+
+.instructionSteps {
+  margin: 0 0 14px;
+  padding-inline-start: 20px;
+}
+
+.instructionSteps li + li {
+  margin-top: 4px;
+}
+
+.instructionSteps a {
+  color: var(--dsw-alias-button-primary-fill);
+  text-decoration: none;
+}
+
+.instructionSteps a:hover,
+.instructionSteps a:focus-visible {
+  text-decoration: underline;
+}
+
+.apiKeyInput {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 10px;
+  background: var(--dsw-alias-bg-base);
+  color: var(--dsw-alias-label-primary);
+  font: inherit;
+  font-size: 16px;
+
+  &:focus-visible {
+    outline: 2px solid var(--dsw-alias-button-primary-fill);
+    outline-offset: 1px;
+  }
+}
+
+.locationSelectors {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: flex-start;
+  justify-content: flex-end;
+  gap: 16px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.locationSelectors > button {
+  flex-shrink: 1;
+  min-width: 0;
+  text-align: start;
+}
+
+.provinceSelect {
+  width: 159px;
+}
+
+.locationSelectors > .citySelect {
+  min-width: 120px;
+  width: 120px;
+}
+
+.regionSelect {
+  max-width: min(285px, 100%);
+}
+
+.description {
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--dsw-alias-label-tertiary);
+}
+
+.error {
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--dsw-alias-state-error-primary);
+}
+
+@media not all and (min-width: 768px) {
+  .dialog {
+    align-self: flex-end;
+    width: 100%;
+    max-width: none;
+    height: calc(100% - 64px);
+    max-height: 800px;
+    border-radius: 24px 24px 0 0;
+  }
+
+  .dialogMain {
+    flex-direction: column;
+  }
+
+  .navigation {
+    flex-direction: row;
+    width: auto;
+    margin: 6px -4px;
+    padding: 4px 0;
+    overflow-x: auto;
+  }
+
+  .navItem {
+    flex: 1 0 auto;
+    justify-content: center;
+    width: auto;
+    min-width: 108px;
+    margin: 0;
+    white-space: nowrap;
+
+    &:first-child {
+      margin-left: 4px;
+    }
+
+    &:last-child {
+      margin-right: 4px;
+    }
+  }
+
+  .content {
+    padding-top: 24px;
+    padding-left: 0;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .text {
+    padding-right: 8px;
+  }
+
+  .cellButton {
+    flex-shrink: 0;
+    min-height: 44px;
+  }
+
+  .locationCell {
+    gap: 12px;
+  }
+
+  .locationCell .text {
+    flex-basis: 100%;
+    padding-right: 0;
+  }
+
+  .locationSelectors {
+    width: 100%;
+    gap: 12px;
+  }
+
+  .provinceSelect,
+  .citySelect {
+    flex: 1 1 auto;
+  }
+
+  .cellButton svg {
+    display: none;
+  }
+}
+
+.confirmDialog {
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+}
+
+.confirmActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  width: 100%;
+}
+
+@media not all and (min-width: 768px) {
+  .confirmActions > button {
+    min-height: 44px;
+    height: auto;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    max-width: 100%;
+  }
+}
+
+.rechargePayment {
+  text-align: center;
+}
+
+.rechargeQr {
+  display: block;
+  width: min(200px, 100%);
+  height: auto;
+  margin-inline: auto;
+}
+
+.rechargeMethods {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 12px 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.rechargeProviders {
+  display: grid;
+  gap: 8px;
+  margin: 16px 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.rechargeMethods legend,
+.rechargeProviders legend {
+  margin-bottom: 8px;
+}
+
+.rechargeMethods label,
+.rechargeProviders label {
+  position: relative;
+}
+
+.rechargeMethods input,
+.rechargeProviders input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.rechargeMethods label span,
+.rechargeProviders label span {
+  display: flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: var(--dsw-alias-label-primary);
+  cursor: pointer;
+}
+
+.rechargeMethods label span {
+  justify-content: center;
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+.rechargeMethods input:checked + span {
+  color: var(--dsw-alias-bg-base);
+  background: var(--dsw-alias-label-primary);
+}
+
+.rechargeProviders label span {
+  border-color: var(--dsw-alias-border-l2);
+}
+
+.rechargeProviders input:checked + span {
+  border-color: var(--dsw-alias-label-primary);
+  box-shadow: inset 0 0 0 1px var(--dsw-alias-label-primary);
+}
+
+.rechargeMethods input:focus-visible + span,
+.rechargeProviders input:focus-visible + span {
+  outline: 2px solid var(--dsw-alias-button-primary-fill);
+  outline-offset: 2px;
+}
+
+.rechargeMethods input:disabled + span,
+.rechargeProviders input:disabled + span {
+  opacity: 0.6;
+  cursor: default;
+}
