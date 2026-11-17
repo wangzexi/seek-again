@@ -69,6 +69,12 @@ export default defineConfig({
   base: "./",
   plugins: [react(), distribute()],
   server: { port: 8090 },
+  resolve: {
+    alias: {
+      "node:zlib": resolve(import.meta.dirname, "src/services/agent/shell/zlibStub.ts"),
+    },
+  },
+  worker: { rolldownOptions: { output: { codeSplitting: false } } },
   css: { modules: { generateScopedName: "[local]-[hash:base64:6]" } },
   build: {
     outDir: dist,

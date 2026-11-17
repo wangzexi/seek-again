@@ -146,9 +146,21 @@ export type WebSearchToolResultBlockParam = WebSearchToolResultBlock;
 /** 只回传 read_link 结果；成功时原样保留 signature，供服务端解密恢复网页上下文 */
 export type WebFetchToolResultBlockParam = WebFetchToolResultBlock;
 
+/** 客户端工具调用：回传时必须与模型返回的 id、name、input 一致 */
+export type ToolUseBlockParam = { type: "tool_use"; id: string; name: string; input: unknown };
+
+/** 客户端工具的执行结果；必须放在紧随对应 tool_use 的 user 消息里，可与文件块同处一条消息 */
+export type ToolResultBlockParam = {
+  type: "tool_result";
+  tool_use_id: string;
+  content: string;
+  is_error?: boolean;
+};
+
 export type AssistantBlockParam =
   | TextBlockParam
   | ThinkingBlock
+  | ToolUseBlockParam
   | ServerToolUseBlockParam
   | WebSearchToolResultBlockParam
   | WebFetchToolResultBlockParam;
@@ -157,7 +169,10 @@ export type AssistantBlockParam =
 export type MessageParam =
   /** Chat Engine 扩展角色，位于对应 user 前；需服务端支持 latest_reminder。 */
   | { role: "latest_reminder"; content: string }
-  | { role: "user"; content: string | (FileBlockParam | TextBlockParam)[] }
+  | {
+      role: "user";
+      content: string | (ToolResultBlockParam | FileBlockParam | TextBlockParam)[];
+    }
   | { role: "assistant"; content: AssistantBlockParam[] };
 
 /** 开启联网搜索与边想边搜 */
@@ -172,12 +187,28 @@ export type DeepseekReadUrlTool = {
   name: "deepseek_read_url";
 };
 
+/** 在浏览器里执行的工具；input_schema 为 JSON Schema */
+export type ClientToolDefinition = {
+  name: string;
+  description: string;
+  input_schema: {
+    type: "object";
+    properties: Record<string, unknown>;
+    required?: string[];
+  };
+};
+
+export type RequestTool = DeepseekWebSearchTool | DeepseekReadUrlTool | ClientToolDefinition;
+
 export type CreateMessageRequest = {
   model: ChatModel;
   system: string;
   messages: MessageParam[];
   thinking: { type: "enabled" | "disabled" };
-  tools: (DeepseekWebSearchTool | DeepseekReadUrlTool)[];
+  /** 摘要请求不声明任何工具 */
+  tools?: RequestTool[];
+  /** 摘要请求限制输出长度；普通聊天不设置 */
+  max_tokens?: number;
   safety_check: { level: "high" };
   title?: { enabled: boolean };
 };

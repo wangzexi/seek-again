@@ -1,0 +1,48 @@
+{
+  "name": "client+safety/think-off",
+  "recordedAt": "2026-11-16T19:22:28.659Z",
+  "request": {
+    "body": {
+      "model": "deepseek-flash",
+      "max_tokens": 512,
+      "system": "You are a helpful assistant.",
+      "thinking": {
+        "type": "disabled"
+      },
+      "tools": [
+        {
+          "name": "read_file",
+          "description": "Read a text file.",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string"
+              }
+            },
+            "required": ["path"]
+          }
+        }
+      ],
+      "messages": [
+        {
+          "role": "user",
+          "content": "Use the read_file tool to read notes.txt."
+        }
+      ],
+      "safety_check": {
+        "level": "high"
+      }
+    }
+  },
+  "response": {
+    "status": 400,
+    "body": {
+      "type": "error",
+      "error": {
+        "type": "invalid_request_error",
+        "message": "tools: client tools can only be used together with `deepseek_web_search`, `deepseek_read_url`, `safety_check` or `title` in thinking mode (request_id: f7e53310-7d53-49d4-82ef-2edcf9c62c18)"
+      }
+    }
+  }
+}

@@ -54,6 +54,11 @@ export const en = {
   messageSearching: "Searching...",
   imageSearching: "Searching by image...",
   searchStopped: "Search stopped",
+  agentToolShell: "Ran {command}",
+  agentToolOther: "Called tool {name}",
+  agentToolFailed: "Failed",
+  agentToolStopped: "Stopped",
+  agentRoundLimit: "Too many tool calls; this turn was stopped.",
   toolSearchFail: "Search currently unavailable",
   toolSearchNoResult: "No suitable results found",
   messageSearchNoResult: "No relevant results found",
@@ -115,6 +120,7 @@ export const en = {
   replyInsufficientBalance: "Insufficient account balance. Please top up and try again.",
   replyRateLimited: "Too many requests. Please try again later.",
   completionServerBusyToast: "Server busy, please try again later.",
+  unknownError: "Unknown error",
   replyRefused: "Sorry, that's beyond my current scope. Let's talk about something else.",
   messageThinkDuration: "Thought for {count} second",
   messageThinkDurationPlural: "Thought for {count} seconds",
@@ -177,6 +183,10 @@ export const en = {
   deepSeekSetupFinished: "Setup complete",
   deepSeekSetupFinish: "Done",
   manualApiKeyTitle: "Set API key manually",
+  manualApiKeyDescription: "Use an API key you created on the DeepSeek Platform.",
+  manualApiKeyConnected: "DeepSeek API is connected. You can replace the key here.",
+  manualApiKeySet: "Set",
+  manualApiKeyReplace: "Replace",
   manualApiKeyStepOpenBefore: "Open the",
   manualApiKeyPlatform: "DeepSeek Platform",
   manualApiKeyStepOpenAfter: " API Keys page and sign in.",
@@ -193,6 +203,8 @@ export const en = {
   manualApiKeySaved: "DeepSeek API key saved",
   deepSeekSetupReady: "You’re ready",
   deepSeekSetupStartChat: "Start chatting",
+  deepSeekSetupManage: "Sign in again or import new chats from DeepSeek.",
+  deepSeekSetupOpen: "Open setup",
   deepSeekPlatformChecking: "Checking your DeepSeek API sign-in status…",
   deepSeekPlatformCreating: "Getting your DeepSeek API key…",
   deepSeekPlatformSignInFailed:
@@ -226,6 +238,8 @@ export const en = {
   deepSeekImportAllDuplicates:
     "All {count} conversations are already on this device and were skipped.",
   deepSeekImportEmpty: "The export archive contains no conversations.",
+  deepSeekImportBrowserError:
+    "Could not open the DeepSeek login page. Check Google Chrome and your connection.",
   deepSeekImportExpired: "This sign-in has expired. Please try again.",
   deepSeekImportWechatAuthorization:
     "WeChat authorization did not finish. Register or sign in to the official DeepSeek app, then go to Settings → Account Management → Link WeChat. Once linked, scan again.",
@@ -242,6 +256,8 @@ export const en = {
   deepSeekQrLoading: "Loading the official sign-in QR code…",
   confirm: "Confirm",
   historyImport: "Manually import chat history",
+  historyImportDescription:
+    "Choose a chat history ZIP from DeepSeek. Existing conversations are skipped.",
   historyImportChoose: "Import manually",
   historyImportStepOpen: "Open",
   historyImportWebsite: "the DeepSeek website",
@@ -251,8 +267,12 @@ export const en = {
   historyImportStepChoose: "Return here and choose the ZIP you downloaded.",
   historyImportPickZip: "Choose ZIP",
   historyImportFailed: "Import failed: {message}",
+  historyImportedOne: "Imported 1 chat",
+  historyImported: "Imported {count} chats",
   historyExportFailed: "Export failed: {message}",
   exportAllLabel: "Export all chats",
+  historyExportDescription:
+    "Includes all chat history and locally stored images. Other attachments retain file details only.",
   exportAllDownload: "Download",
   deleteAllSessions: "Delete all chats",
   deleteAllSessionsModalTitle: "Permanently delete all local chats?",
@@ -290,6 +310,7 @@ export const en = {
   voiceInputPermissionDenied:
     "Microphone access is blocked. Please allow it in your browser settings.",
   voiceInputNoDevice: "No microphone detected",
+  voiceInputTooLong: "Recording is too long. Please shorten it and try again.",
   voiceInputFailed: "Speech recognition failed. Please try again later.",
   voiceInputEmpty: "No speech detected",
   voiceInputLimitReached: "Maximum recording length reached",

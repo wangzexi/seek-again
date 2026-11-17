@@ -1,10 +1,28 @@
 import { create } from "zustand";
 import { createId } from "../../utils/id.js";
 import { ApiError, streamMessage } from "../api/client.js";
-import type { ChatModel, CreateMessageRequest } from "../api/types.js";
+import type { ChatModel, MessageParam, MessageStreamEvent } from "../api/types.js";
 import { extractFileIds, getFileErrorCode, isRetryableApiError } from "../api/errors.js";
+import { createAgentFs } from "../agent/fs.js";
+import type { ShellState } from "../agent/shell/protocol.js";
+import { buildRequestParts } from "../agent/registry.js";
+import {
+  MAX_AGENT_ROUNDS,
+  appendRounds,
+  createRoundCollector,
+  runToolCall,
+  type Round,
+} from "../agent/round.js";
 import { cancelUpload, describeUploadError, uploadAttachment, useUploads } from "../attachments.js";
 import { useSettings } from "../settings.js";
+import {
+  estimateTokens,
+  getContextWindow,
+  isContextOverflowError,
+  planCompaction,
+} from "./compaction.js";
+import { summarize } from "./summarize.js";
+import { appendOps, pathTo, resolveDirectory } from "../workspace/layers.js";
 import { appendBranch, getVisibleMessages, normalizeSession, selectVersion } from "./branches.js";
 import * as db from "./db.js";
 import {
@@ -43,17 +61,6 @@ const SAFETY_CHECK = { level: "high" } as const;
 const FILE_RETRY_LIMIT = 2;
 /** 退避基数，第 n 次重试等待 2^n 倍；连续失败达到上限就放弃，把原始报错展示出来 */
 const FILE_RETRY_BASE_DELAY = 1000;
-
-/** 阅读链接始终开启，智能搜索开关控制是否另行声明搜索工具（含边想边搜）。 */
-const serverTools = (search: boolean): CreateMessageRequest["tools"] => {
-  const tools: CreateMessageRequest["tools"] = [
-    { type: "deepseek_read_url", name: "deepseek_read_url" },
-  ];
-  if (search) {
-    tools.push({ type: "deepseek_web_search", name: "deepseek_web_search" });
-  }
-  return tools;
-};
 
 /** 允许自动补标题的请求；手动重命名后取消本轮标题写入，包含主动清空标题的情况。 */
 const titleRequests = new Set<AbortController>();
@@ -975,6 +982,59 @@ const waitForRetry = (attempt: number, signal: AbortSignal) =>
   });
 
 /**
+ * 发请求前按需压缩早期对话：预估的下一次请求接近窗口时，把最旧的几轮摘要成一段笔记，记在提问前的
+ * 最后一条消息上。界面和消息树不变，用户无感。摘要失败不挡住聊天：照原样发送，真溢出了由溢出补救处理。
+ */
+const compactIfNeeded = async (
+  sessionId: string,
+  request: Request,
+  model: ChatModel,
+  signal: AbortSignal,
+  force: boolean,
+): Promise<boolean> => {
+  const window = getContextWindow();
+  const plan = planCompaction(request.history, request.question, {
+    window,
+    systemPromptTokens: estimateTokens(useSettings.getState().systemPrompt),
+    force,
+  });
+  if (!plan) {
+    return false;
+  }
+  try {
+    const summary = await summarize(plan, {
+      token: useSettings.getState().accessToken ?? "",
+      model,
+      window,
+      signal,
+    });
+    signal.throwIfAborted();
+    updateSession(sessionId, (session) => ({
+      ...session,
+      messages: session.messages.map((message) =>
+        message.id === plan.ownerId
+          ? {
+              ...message,
+              compaction: {
+                summary,
+                firstKeptMessageId: plan.firstKeptMessageId,
+                tokensBefore: plan.tokensBefore,
+              },
+            }
+          : message,
+      ),
+    }));
+    persist(sessionId);
+    return true;
+  } catch (error) {
+    if (signal.aborted) {
+      throw error;
+    }
+    return false;
+  }
+};
+
+/**
  * 请求并消费流：先补齐附件的 serverId，再发请求；流式增量按动画帧刷新内存，完成、失败或停止后落盘。
  * 补传失败时回复记为 upload 错误，可重试。
  * 服务端判定 file_id 失效时重新补传后重发，退避重试且次数有上限，超过则按原始报错收尾。
@@ -995,13 +1055,29 @@ const streamReply = async (sessionId: string, initial: AssistantMessage, request
   streamFlushes.set(sessionId, flush);
 
   try {
+    // 上下文溢出的补救只做一次：更狠地压缩后重发。
+    let overflowRetried = false;
+    let forceCompact = false;
     for (let attempt = 0; ; attempt += 1) {
       /** 附件补齐前出错属于上传失败，请求还没有发出 */
       let preparing = true;
       let receivedContent = false;
       try {
-        const prepared = await prepareFiles(sessionId, request, controller.signal);
+        let prepared: Request = await prepareFiles(sessionId, request, controller.signal);
         preparing = false;
+        // 续写末尾已有 assistant 前缀，不压缩。
+        if (
+          !prepared.prefix &&
+          (await compactIfNeeded(
+            sessionId,
+            prepared,
+            initial.model ?? MODEL,
+            controller.signal,
+            forceCompact,
+          ))
+        ) {
+          prepared = refreshRequest(sessionId, prepared);
+        }
         // 附件就绪后获取本轮信息；续写沿用原回答快照，重新生成的快照独立保存。
         const latestReminder = prepared.prefix
           ? prepared.prefix.latestReminder
@@ -1016,41 +1092,143 @@ const streamReply = async (sessionId: string, initial: AssistantMessage, request
           initial.thinking ?? false,
           latestReminder,
         );
-        const events = streamMessage(
-          useSettings.getState().accessToken ?? "",
-          {
-            model: initial.model ?? MODEL,
-            system: useSettings.getState().systemPrompt,
-            messages,
-            thinking: { type: initial.thinking ? "enabled" : "disabled" },
-            safety_check: SAFETY_CHECK,
-            tools: serverTools(initial.search ?? false),
-            ...(titleRequests.has(controller) ? { title: { enabled: true } } : {}),
-          },
-          controller.signal,
+        // 深度思考、智能搜索、阅读链接和文件工具都由能力注册表按开关生成；
+        // 续写时末尾已有 assistant 前缀，不能再声明客户端工具。
+        const parts = buildRequestParts(
+          { thinking: initial.thinking ?? false, search: initial.search ?? false },
+          { clientTools: !prepared.prefix },
         );
-        const blockIndexes = new Map<number, number>();
-        for await (const event of events) {
-          receivedContent ||= event.type === "content_block_start";
-          if (
-            event.type === "message_delta" &&
-            (event.delta.stop_reason === "end_turn" || event.delta.stop_reason === "max_tokens") &&
-            event.delta.title?.trim() &&
-            titleRequests.has(controller) &&
-            !controller.signal.aborted &&
-            !get().importingHistory
-          ) {
-            const title = event.delta.title.trim();
-            updateSession(sessionId, (session) =>
-              session.title ? session : { ...session, title },
-            );
-            titleRequests.delete(controller);
+        const open = (requestMessages: MessageParam[]) =>
+          streamMessage(
+            useSettings.getState().accessToken ?? "",
+            {
+              model: initial.model ?? MODEL,
+              system: useSettings.getState().systemPrompt,
+              messages: requestMessages,
+              ...parts,
+              safety_check: SAFETY_CHECK,
+              ...(titleRequests.has(controller) ? { title: { enabled: true } } : {}),
+            },
+            controller.signal,
+          );
+        /** 消费一次请求的流：界面合并、标题、以及回传所需内容的收集。 */
+        const consume = async (events: AsyncIterable<MessageStreamEvent>) => {
+          const collector = createRoundCollector();
+          const blockIndexes = new Map<number, number>();
+          for await (const event of events) {
+            receivedContent ||= event.type === "content_block_start";
+            if (
+              event.type === "message_delta" &&
+              (event.delta.stop_reason === "end_turn" ||
+                event.delta.stop_reason === "max_tokens") &&
+              event.delta.title?.trim() &&
+              titleRequests.has(controller) &&
+              !controller.signal.aborted &&
+              !get().importingHistory
+            ) {
+              const title = event.delta.title.trim();
+              updateSession(sessionId, (session) =>
+                session.title ? session : { ...session, title },
+              );
+              titleRequests.delete(controller);
+            }
+            collector.push(event);
+            reply = applyEvent(reply, event, Date.now(), blockIndexes);
+            if (document.visibilityState === "hidden") {
+              flush();
+            } else {
+              frame ||= requestAnimationFrame(flush);
+            }
           }
-          reply = applyEvent(reply, event, Date.now(), blockIndexes);
-          if (document.visibilityState === "hidden") {
-            flush();
-          } else {
-            frame ||= requestAnimationFrame(flush);
+          return collector.result();
+        };
+
+        let round = await consume(open(messages));
+        // Agent 循环：模型要求调用浏览器里的工具时，执行、回传结果，再让模型继续，直到它不再调用。
+        if (reply.stopReason === "tool_use" && round.calls.length > 0) {
+          const session = getSession(sessionId);
+          const base = session ? resolveDirectory(session, prepared.question.id) : new Map();
+          let commit = reply.commit;
+          const fs = createAgentFs(base, (ops) => {
+            commit = appendOps(commit, ops);
+          });
+          // bash 的当前目录和变量跨命令保留：从路径上最近一个回复的状态开始，每条命令后更新，
+          // 记在这个回复上，所以像文件一样随分支走。
+          let shellState = session
+            ? pathTo(session, prepared.question.id).findLast(
+                (message): message is AssistantMessage =>
+                  message.role === "assistant" && message.agent?.shell !== undefined,
+              )?.agent?.shell
+            : undefined;
+          const shell = {
+            get state() {
+              return shellState;
+            },
+            save: (state: ShellState) => {
+              shellState = state;
+            },
+          };
+          const rounds: Round[] = [];
+          while (reply.stopReason === "tool_use" && round.calls.length > 0) {
+            if (rounds.length >= MAX_AGENT_ROUNDS) {
+              reply = settleReply(reply, "error", Date.now(), {
+                kind: "protocol",
+                message: "Too many tool rounds.",
+                localMessage: { key: "agentRoundLimit" },
+              });
+              return;
+            }
+            const results: Round["results"] = [];
+            for (const call of round.calls) {
+              controller.signal.throwIfAborted();
+              reply = {
+                ...reply,
+                agent: {
+                  ...(shellState ? { shell: shellState } : {}),
+                  calls: [
+                    ...(reply.agent?.calls ?? []),
+                    {
+                      id: call.id,
+                      name: call.name,
+                      input: call.input,
+                      at: reply.blocks.length,
+                      status: "running",
+                    },
+                  ],
+                },
+              };
+              flush();
+              const outcome = await runToolCall({ fs, signal: controller.signal, shell }, call);
+              controller.signal.throwIfAborted();
+              reply = {
+                ...reply,
+                commit,
+                agent: {
+                  ...(shellState ? { shell: shellState } : {}),
+                  calls: (reply.agent?.calls ?? []).map((item) =>
+                    item.id === call.id
+                      ? {
+                          ...item,
+                          status: outcome.isError ? "error" : "done",
+                          output: outcome.text,
+                        }
+                      : item,
+                  ),
+                },
+              };
+              results.push({
+                type: "tool_result",
+                tool_use_id: call.id,
+                content: outcome.text,
+                ...(outcome.isError ? { is_error: true } : {}),
+              });
+              flush();
+              persist(sessionId);
+            }
+            rounds.push({ content: round.content, results });
+            // 新一轮的结束原因由新的 message_delta 重新给出，被打断时不能沿用上一轮的 tool_use。
+            reply = { ...reply, stopReason: undefined };
+            round = await consume(open(appendRounds(messages, rounds)));
           }
         }
         reply = settleReply(reply, "done", Date.now());
@@ -1080,6 +1258,19 @@ const streamReply = async (sessionId: string, initial: AssistantMessage, request
             reply = settleReply(reply, "stopped", Date.now());
             break;
           }
+          continue;
+        }
+        // 上下文溢出：更狠地压缩一次后重发。错误文案没有在官方接口上验证过，只靠通用关键词识别。
+        if (
+          !overflowRetried &&
+          !receivedContent &&
+          !request.prefix &&
+          error instanceof ApiError &&
+          error.kind === "http" &&
+          isContextOverflowError(error.status, error.message)
+        ) {
+          overflowRetried = true;
+          forceCompact = true;
           continue;
         }
         if (error instanceof ApiError && error.kind === "interrupted" && reply.stopReason) {

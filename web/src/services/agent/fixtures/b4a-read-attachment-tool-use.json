@@ -1,0 +1,77 @@
+{
+  "name": "b4a-read-attachment-tool-use",
+  "recordedAt": "2026-11-16T18:04:59.678Z",
+  "model": "deepseek-flash",
+  "request": {
+    "method": "POST",
+    "path": "/messages",
+    "beta": false,
+    "body": {
+      "model": "deepseek-flash",
+      "max_tokens": 1024,
+      "system": "You are a helpful assistant.",
+      "thinking": {
+        "type": "disabled"
+      },
+      "tools": [
+        {
+          "name": "read_attachment",
+          "description": "Read an attached document. The file content will be provided to you.",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "purpose": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "path"
+            ]
+          }
+        }
+      ],
+      "messages": [
+        {
+          "role": "user",
+          "content": "Call read_attachment for report.pdf, then tell me the secret code word in it."
+        }
+      ]
+    }
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "id": "fccfe498-62c4-4ce4-9ae7-0946877e2c83",
+      "type": "message",
+      "role": "assistant",
+      "model": "deepseek-flash",
+      "content": [
+        {
+          "type": "text",
+          "text": "I'll read the report for you."
+        },
+        {
+          "type": "tool_use",
+          "id": "call_00_OBiSNuaQRgCIVCQXfsPJ5885",
+          "name": "read_attachment",
+          "input": {
+            "path": "report.pdf",
+            "purpose": "Find the secret code word in the document"
+          }
+        }
+      ],
+      "stop_reason": "tool_use",
+      "stop_sequence": null,
+      "usage": {
+        "input_tokens": 177,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 128,
+        "output_tokens": 70,
+        "service_tier": "standard"
+      }
+    }
+  }
+}

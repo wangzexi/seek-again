@@ -1,0 +1,74 @@
+{
+  "name": "client+title/think-on",
+  "recordedAt": "2026-11-16T19:22:32.340Z",
+  "request": {
+    "body": {
+      "model": "deepseek-flash",
+      "max_tokens": 512,
+      "system": "You are a helpful assistant.",
+      "thinking": {
+        "type": "enabled"
+      },
+      "tools": [
+        {
+          "name": "read_file",
+          "description": "Read a text file.",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string"
+              }
+            },
+            "required": ["path"]
+          }
+        }
+      ],
+      "messages": [
+        {
+          "role": "user",
+          "content": "Use the read_file tool to read notes.txt."
+        }
+      ],
+      "title": {
+        "enabled": true
+      }
+    }
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "id": "7b01d768-3616-4618-9071-dbdb77eba724",
+      "type": "message",
+      "role": "assistant",
+      "model": "deepseek-flash",
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "The user wants me to read notes.txt.",
+          "signature": "7b01d768-3616-4618-9071-dbdb77eba724"
+        },
+        {
+          "type": "tool_use",
+          "id": "call_00_eR33sID5rnV6ZdfiLOvN3730",
+          "name": "read_file",
+          "input": {
+            "path": "notes.txt"
+          }
+        }
+      ],
+      "stop_reason": "tool_use",
+      "stop_sequence": null,
+      "usage": {
+        "input_tokens": 174,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 128,
+        "output_tokens": 48,
+        "service_tier": "standard",
+        "output_tokens_details": {
+          "thinking_tokens": 9
+        }
+      }
+    }
+  }
+}

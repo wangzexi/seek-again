@@ -1,0 +1,18 @@
+{
+  "A1 tool_use (non-stream)": "200 stop=tool_use blocks=text,tool_use",
+  "A2 tool_result roundtrip": "200 stop=end_turn blocks=text text=\"The first line of notes.txt is: **HELLO-123**\"",
+  "A3 tool_use (stream)": "200 stop=tool_use blocks=text,tool_use input={\"path\":\"notes.txt\"}",
+  "A4 thinking + tool_use (stream)": "200 stop=tool_use blocks=thinking,text,tool_use",
+  "A5 thinking roundtrip (full content)": "200 stop=end_turn blocks=thinking,text text=\"The first line of `notes.txt` is: **HELLO-123**\"",
+  "A6 thinking roundtrip (thinking dropped)": "200 stop=end_turn blocks=thinking,text",
+  "A7 parallel tool calls": "calls=2 then 200 stop=end_turn blocks=text text=\"The results came back oddly — each file seems to contain just a single line indi\"",
+  "A8 tool_result is_error + array content": "200 stop=end_turn blocks=text text=\"I tried to read `notes.txt`, but the file doesn't exist at that path (error: ENOENT: no such file). \"",
+  "B1 upload text with expiry": "200 {\"id\":\"file-api-5bb0033a-ff9a-4924-ae78-298003d2a9fd\",\"type\":\"file\",\"size_bytes\":38,\"created_at\":\"2026-11-16T18:04:54.670+00:00\",\"filename\":\"notes.txt\",\"mime_type\":\"text/plain\"}",
+  "B2 upload pdf (text_recognition)": "200 {\"id\":\"file-api-f9ecda95-0787-412a-a1c5-22c28b782cd4\",\"type\":\"file\",\"size_bytes\":605,\"created_at\":\"2026-11-16T18:04:57.094+00:00\",\"filename\":\"report.pdf\",\"mime_type\":\"application/pdf\"}",
+  "B3 document block directly": "200 stop=end_turn blocks=text text=\"The secret code word is **SECRET-PDF-42**.\"",
+  "B4a read_attachment tool_use": "200 stop=tool_use blocks=text,tool_use",
+  "B4b tool_result + document SAME user msg": "200 stop=end_turn blocks=text text=\"The secret code word in report.pdf is **SECRET-PDF-42**.\"",
+  "B5 doc in FOLLOWING user message": "200 stop=end_turn blocks=text text=\"The secret code word in report.pdf is: **SECRET-PDF-42**\"",
+  "B6 document block + thinking enabled": "200 stop=end_turn blocks=thinking,text",
+  "B7 text file as document block": "200 stop=end_turn blocks=text text=\"The first line is: HELLO-123\""
+}

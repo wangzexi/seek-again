@@ -1,0 +1,106 @@
+{
+  "name": "a7-parallel-roundtrip",
+  "recordedAt": "2026-11-16T18:04:53.074Z",
+  "model": "deepseek-flash",
+  "request": {
+    "method": "POST",
+    "path": "/messages",
+    "beta": false,
+    "body": {
+      "model": "deepseek-flash",
+      "max_tokens": 1024,
+      "system": "You are a helpful assistant.",
+      "thinking": {
+        "type": "disabled"
+      },
+      "tools": [
+        {
+          "name": "read_file",
+          "description": "Read a text file from the local virtual filesystem.",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string",
+                "description": "file path"
+              }
+            },
+            "required": [
+              "path"
+            ]
+          }
+        }
+      ],
+      "messages": [
+        {
+          "role": "user",
+          "content": "Read BOTH a.txt and b.txt using read_file (call them in the same turn), then tell me both first lines."
+        },
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "text",
+              "text": "I'll read both files now."
+            },
+            {
+              "type": "tool_use",
+              "id": "call_00_50svG8LHFiJrOAdcFczN8381",
+              "name": "read_file",
+              "input": {
+                "path": "a.txt"
+              }
+            },
+            {
+              "type": "tool_use",
+              "id": "call_01_lPcel31V4FohOuvsCkGT6822",
+              "name": "read_file",
+              "input": {
+                "path": "b.txt"
+              }
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "tool_result",
+              "tool_use_id": "call_00_50svG8LHFiJrOAdcFczN8381",
+              "content": "content of a.txt: LINE-a.txt"
+            },
+            {
+              "type": "tool_result",
+              "tool_use_id": "call_01_lPcel31V4FohOuvsCkGT6822",
+              "content": "content of b.txt: LINE-b.txt"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "id": "f09dbfd2-39dd-4ad8-9d4b-4a0e8d179af3",
+      "type": "message",
+      "role": "assistant",
+      "model": "deepseek-flash",
+      "content": [
+        {
+          "type": "text",
+          "text": "The results came back oddly — each file seems to contain just a single line indicating its own name rather than readable content. Here's what I got:\n\n- **a.txt** first line: `content of a.txt: LINE-a.txt`\n- **b.txt** first line: `content of b.txt: LINE-b.txt`\n\nIn other words, the first (and only) line of **a.txt** is `LINE-a.txt`, and the first line of **b.txt** is `LINE-b.txt`."
+        }
+      ],
+      "stop_reason": "end_turn",
+      "stop_sequence": null,
+      "usage": {
+        "input_tokens": 159,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 256,
+        "output_tokens": 103,
+        "service_tier": "standard"
+      }
+    }
+  }
+}

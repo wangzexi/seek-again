@@ -8,6 +8,7 @@ import type {
 } from "../api/types.js";
 import type {
   AssistantMessage,
+  Compaction,
   FileAttachment,
   Message,
   ReplyBlock,
@@ -149,6 +150,19 @@ export const settleReply = (
   ...reply,
   status,
   error,
+  // 正常结束的提交标为完整；停止或出错时保留已发生的写入，仍标为部分。
+  ...(reply.commit && status === "done" ? { commit: { ...reply.commit, status: "complete" } } : {}),
+  // 还没执行完的工具调用在回复结束时记为已停止。
+  ...(reply.agent
+    ? {
+        agent: {
+          ...reply.agent,
+          calls: reply.agent.calls.map((call) =>
+            call.status === "running" ? { ...call, status: "stopped" as const } : call,
+          ),
+        },
+      }
+    : {}),
   blocks: reply.blocks.flatMap((block): ReplyBlock[] => {
     if (reply.stopReason === "refusal" && (block.type === "thinking" || block.type === "text")) {
       return [];
@@ -295,6 +309,52 @@ export const getContextRounds = (history: Message[]): [UserMessage, AssistantMes
   return rounds;
 };
 
+/** 路径上最近的一次压缩，以及它挂在路径的第几条消息上。 */
+export const findCompaction = (
+  path: Message[],
+): { compaction: Compaction; index: number } | undefined => {
+  for (let i = path.length - 1; i >= 0; i--) {
+    const compaction = path[i].compaction;
+    if (compaction) {
+      return { compaction, index: i };
+    }
+  }
+  return undefined;
+};
+
+/** 压缩点之前的轮次已并入摘要，不再发给模型；找不到保留起点时保持原样，不丢内容。 */
+export const applyCompaction = (
+  rounds: [UserMessage, AssistantMessage][],
+  path: Message[],
+  found: { compaction: Compaction } | undefined,
+) => {
+  if (!found) {
+    return rounds;
+  }
+  const positions = new Map(path.map((message, index) => [message.id, index]));
+  const keptFrom = positions.get(found.compaction.firstKeptMessageId);
+  if (keptFrom === undefined) {
+    return rounds;
+  }
+  return rounds.filter(([user]) => (positions.get(user.id) ?? 0) >= keptFrom);
+};
+
+/** 并进第一条保留的用户消息前面。语气上让模型把它当作自己的记忆，不要提到它的存在。 */
+export const summaryPreamble = (summary: string) =>
+  "<conversation-notes>\n" +
+  "The earlier part of this conversation was condensed into the notes below. Treat them as your own memory of what happened before, and carry on naturally without mentioning that the notes exist.\n\n" +
+  `${summary}\n` +
+  "</conversation-notes>\n\n";
+
+const withPreamble = (param: MessageParam, preamble: string): MessageParam => {
+  if (!preamble || param.role !== "user") {
+    return param;
+  }
+  return typeof param.content === "string"
+    ? { role: "user", content: preamble + param.content }
+    : { role: "user", content: [{ type: "text", text: preamble }, ...param.content] };
+};
+
 /**
  * 把会话转成请求的 messages：只保留「提问 + 有回答的回复」成对的轮次，最后接上本轮提问。
  * 失败或没有回答的轮次不进上下文。续写时末尾再带上本轮 assistant。
@@ -315,16 +375,24 @@ export const toRequestMessages = (
       previousReminder = reminder;
     }
   };
-  for (const [user, reply] of getContextRounds(history)) {
+  // 有压缩时，摘要并进第一条真正发出的用户消息，保持用户与助手交替。
+  const found = findCompaction(history);
+  let preamble = found ? summaryPreamble(found.compaction.summary) : "";
+  const pushUser = (param: MessageParam) => {
+    messages.push(withPreamble(param, preamble));
+    preamble = "";
+  };
+  for (const [user, reply] of applyCompaction(getContextRounds(history), history, found)) {
     // 历史提问没有文字、附件也都没有 serverId 时，提问为空，连同回答一起省略。
     if (!user.content && toFileBlocks(user.files).length === 0) {
       continue;
     }
     appendReminder(reply.latestReminder);
-    messages.push(toUserParam(user), toAssistantParam(reply));
+    pushUser(toUserParam(user));
+    messages.push(toAssistantParam(reply));
   }
   appendReminder(latestReminder);
-  messages.push(toUserParam(question));
+  pushUser(toUserParam(question));
   if (prefix?.prefix) {
     const assistant = toAssistantParam(prefix, true, thinking);
     // 没有非空白正文或有效思考时直接重发原问题，避免服务端拒绝空 Prefill。

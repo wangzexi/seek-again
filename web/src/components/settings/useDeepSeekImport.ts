@@ -15,12 +15,14 @@ import type { DeepSeekSetupMode } from "./settingsDialogState.js";
 import { pause, pollSetupAuthorization, readSetup, setupRequest } from "./deepSeekSetupRequest.js";
 
 const errors: Record<string, TranslationKey> = {
+  browser: "deepSeekImportBrowserError",
   loginTimeout: "deepSeekImportExpired",
   unauthorized: "deepSeekImportUnauthorized",
   wechatAuthorization: "deepSeekImportWechatAuthorization",
   rateLimit: "deepSeekImportRateLimit",
   exportRateLimit: "deepSeekExportRateLimit",
   upstream: "deepSeekImportUpstream",
+  unexpected: "deepSeekImportUpstream",
   download: "deepSeekImportDownloadFailed",
   save: "deepSeekImportSaveFailed",
   platformKey: "deepSeekPlatformKeyFailed",

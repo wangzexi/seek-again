@@ -1,0 +1,14 @@
+{
+  "client-only/think-off": "200 stop=tool_use blocks=text,tool_use",
+  "client-only/think-on": "200 stop=tool_use blocks=thinking,text,tool_use",
+  "client+safety/think-off": "400 \"tools: client tools can only be used together with `deepseek_web_search`, `deepseek_read_url`, `safety_check` or `title` in thinking mode (request_id: f7e53310-7d53-49d4",
+  "client+safety/think-on": "200 stop=tool_use blocks=thinking,tool_use",
+  "client+readurl/think-off": "400 \"tools: client tools can only be used together with `deepseek_web_search`, `deepseek_read_url`, `safety_check` or `title` in thinking mode (request_id: 1f85fa0c-d9e3-4f94",
+  "client+readurl/think-on": "200 stop=tool_use blocks=thinking,text,tool_use",
+  "client+title/think-off": "400 \"tools: client tools can only be used together with `deepseek_web_search`, `deepseek_read_url`, `safety_check` or `title` in thinking mode (request_id: 5b789722-4ef3-466f",
+  "client+title/think-on": "200 stop=tool_use blocks=thinking,tool_use",
+  "app-request(client+readurl+safety+title)/think-off": "400 \"tools: client tools can only be used together with `deepseek_web_search`, `deepseek_read_url`, `safety_check` or `title` in thinking mode (request_id: d4010687-f9a2-443d",
+  "app-request(client+readurl+safety+title)/think-on": "200 stop=tool_use blocks=thinking,text,tool_use",
+  "app-request+search(client+readurl+websearch+safety+title)/think-on": "200 stop=tool_use blocks=thinking,tool_use",
+  "app-request+search(client+readurl+websearch+safety+title)/think-off": "400 \"tools: client tools can only be used together with `deepseek_web_search`, `deepseek_read_url`, `safety_check` or `title` in thinking mode (request_id: a531caf7-e6d5-41fd"
+}

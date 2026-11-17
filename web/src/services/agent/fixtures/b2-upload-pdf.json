@@ -1,0 +1,28 @@
+{
+  "name": "b2-upload-pdf",
+  "recordedAt": "2026-11-16T18:04:57.226Z",
+  "model": "deepseek-flash",
+  "request": {
+    "method": "POST",
+    "path": "/files",
+    "fields": {
+      "purpose": "text_recognition"
+    },
+    "file": {
+      "name": "report.pdf",
+      "type": "application/pdf",
+      "size": 605
+    }
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "id": "file-api-f9ecda95-0787-412a-a1c5-22c28b782cd4",
+      "type": "file",
+      "size_bytes": 605,
+      "created_at": "2026-11-16T18:04:57.094+00:00",
+      "filename": "report.pdf",
+      "mime_type": "application/pdf"
+    }
+  }
+}

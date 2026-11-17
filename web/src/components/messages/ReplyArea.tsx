@@ -14,7 +14,7 @@ import {
   IconSearchWarningOutline16,
   IconThinkOutline16,
 } from "../base/icons.js";
-import type { AssistantMessage } from "../../services/chat/types.js";
+import type { AgentCall, AssistantMessage } from "../../services/chat/types.js";
 import {
   getAreaTitle,
   isDeepSearchKind,
@@ -27,6 +27,7 @@ import {
   type SearchStep,
   type Source,
   type Step,
+  type ToolStep,
 } from "../../services/chat/view.js";
 import { Tooltip } from "../base/Tooltip.js";
 import { Markdown } from "../markdown/Markdown.js";
@@ -158,6 +159,8 @@ const StepItem = ({
       return <FindRow step={step} isLast={isLast} />;
     case "read_link":
       return <ReadLinkRow step={step} isLast={isLast} />;
+    case "tool":
+      return <ToolCallRow step={step} isLast={isLast} />;
     default:
       return null;
   }
@@ -378,6 +381,42 @@ const FindRow = ({ step, isLast }: { step: FindStep; isLast: boolean }) => {
 };
 
 /** 阅读用户消息中的链接：视图只保留仍在读取的链接。 */
+/** 浏览器里执行的工具调用：动作加路径，执行中闪烁，失败或停止时在后面标注。 */
+const ToolCallRow = ({ step, isLast }: { step: ToolStep; isLast: boolean }) => {
+  const t = useTranslate();
+  const failed = step.calls.some((call) => call.status === "error");
+  const label = (call: AgentCall) => {
+    const input = call.input as { command?: unknown } | null;
+    // 命令可能很长，时间线里只显示开头；完整内容在返回给模型的轨迹里。
+    const raw = typeof input?.command === "string" ? input.command.replace(/\s+/g, " ").trim() : "";
+    const command = raw.length > 80 ? `${raw.slice(0, 80)}…` : raw;
+    return call.name === "bash"
+      ? t("agentToolShell", { command })
+      : t("agentToolOther", { name: call.name });
+  };
+  return (
+    <ToolRow
+      icon={failed ? <IconBrowseWarningOutline16 /> : <IconBrowseOutline16 />}
+      isLast={isLast}
+    >
+      <div data-agent-calls="">
+        {step.calls.map((call) => (
+          <div
+            key={call.id}
+            data-agent-tool={call.name}
+            data-agent-status={call.status}
+            className={clsx(call.status === "running" && styles.shimmer)}
+          >
+            {label(call)}
+            {call.status === "error" ? ` · ${t("agentToolFailed")}` : ""}
+            {call.status === "stopped" ? ` · ${t("agentToolStopped")}` : ""}
+          </div>
+        ))}
+      </div>
+    </ToolRow>
+  );
+};
+
 const ReadLinkRow = ({ step, isLast }: { step: ReadLinkStep; isLast: boolean }) => {
   const t = useTranslate();
   return (

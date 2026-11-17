@@ -81,7 +81,12 @@ export const stop = async () => {
 export type App = { context: BrowserContext; page: Page; close: () => Promise<void> };
 
 /** 每个场景一个全新的浏览器环境（独立的 localStorage 与 IndexedDB），并已带上登录凭证。 */
-export const openApp = async (setup?: (route: Route) => Promise<void>): Promise<App> => {
+export const openApp = async (
+  options?: { thinking?: boolean; contextWindow?: number } | ((route: Route) => Promise<void>),
+): Promise<App> => {
+  const setup = typeof options === "function" ? options : undefined;
+  const thinking = typeof options === "object" ? (options.thinking ?? false) : false;
+  const contextWindow = typeof options === "object" ? options.contextWindow : undefined;
   if (!browser || !server) throw new Error("world not started");
   mock.reset();
   const context = await browser.newContext({
@@ -89,7 +94,7 @@ export const openApp = async (setup?: (route: Route) => Promise<void>): Promise<
     locale: "en-US",
   });
   await context.addInitScript(
-    ({ token, upstream, prefix }) => {
+    ({ token, upstream, prefix, thinking, contextWindow }) => {
       window.fetch = new Proxy(window.fetch, {
         apply(fetch, receiver, args) {
           const url = args[0];
@@ -100,13 +105,21 @@ export const openApp = async (setup?: (route: Route) => Promise<void>): Promise<
         },
       });
       try {
-        if (token) localStorage.setItem("chat-demo:access-token", token);
+        if (token && localStorage.getItem("chat-demo:access-token") === null) {
+          localStorage.setItem("chat-demo:access-token", token);
+          if (contextWindow)
+            localStorage.setItem("chat-demo:context-window", String(contextWindow));
+        }
         localStorage.setItem("chat-demo:locale", "en-US");
-        localStorage.setItem("chat-demo:thinking", "false");
-        localStorage.setItem("chat-demo:search", "false");
+        if (localStorage.getItem("chat-demo:thinking") === null) {
+          localStorage.setItem("chat-demo:thinking", String(thinking));
+        }
+        if (localStorage.getItem("chat-demo:search") === null) {
+          localStorage.setItem("chat-demo:search", "false");
+        }
       } catch {}
     },
-    { token: setup ? null : fixtureKey, upstream, prefix },
+    { token: setup ? null : fixtureKey, upstream, prefix, thinking, contextWindow },
   );
   if (setup) await context.route("**/api/deepseek-import/**", setup);
   const page = await context.newPage();

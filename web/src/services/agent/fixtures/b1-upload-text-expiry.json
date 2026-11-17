@@ -1,0 +1,30 @@
+{
+  "name": "b1-upload-text-expiry",
+  "recordedAt": "2026-11-16T18:04:54.869Z",
+  "model": "deepseek-flash",
+  "request": {
+    "method": "POST",
+    "path": "/files",
+    "fields": {
+      "purpose": "user_data",
+      "expires_after[anchor]": "created_at",
+      "expires_after[seconds]": "3600"
+    },
+    "file": {
+      "name": "notes.txt",
+      "type": "text/plain;charset=utf-8",
+      "size": 38
+    }
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "id": "file-api-5bb0033a-ff9a-4924-ae78-298003d2a9fd",
+      "type": "file",
+      "size_bytes": 38,
+      "created_at": "2026-11-16T18:04:54.670+00:00",
+      "filename": "notes.txt",
+      "mime_type": "text/plain"
+    }
+  }
+}

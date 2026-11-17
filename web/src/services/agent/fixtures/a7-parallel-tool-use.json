@@ -1,0 +1,82 @@
+{
+  "name": "a7-parallel-tool-use",
+  "recordedAt": "2026-11-16T18:04:51.908Z",
+  "model": "deepseek-flash",
+  "request": {
+    "method": "POST",
+    "path": "/messages",
+    "beta": false,
+    "body": {
+      "model": "deepseek-flash",
+      "max_tokens": 1024,
+      "system": "You are a helpful assistant.",
+      "thinking": {
+        "type": "disabled"
+      },
+      "tools": [
+        {
+          "name": "read_file",
+          "description": "Read a text file from the local virtual filesystem.",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string",
+                "description": "file path"
+              }
+            },
+            "required": [
+              "path"
+            ]
+          }
+        }
+      ],
+      "messages": [
+        {
+          "role": "user",
+          "content": "Read BOTH a.txt and b.txt using read_file (call them in the same turn), then tell me both first lines."
+        }
+      ]
+    }
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "id": "9bd19b98-0ad8-4c6f-a6ee-a8d8aef5cd5a",
+      "type": "message",
+      "role": "assistant",
+      "model": "deepseek-flash",
+      "content": [
+        {
+          "type": "text",
+          "text": "I'll read both files now."
+        },
+        {
+          "type": "tool_use",
+          "id": "call_00_50svG8LHFiJrOAdcFczN8381",
+          "name": "read_file",
+          "input": {
+            "path": "a.txt"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_01_lPcel31V4FohOuvsCkGT6822",
+          "name": "read_file",
+          "input": {
+            "path": "b.txt"
+          }
+        }
+      ],
+      "stop_reason": "tool_use",
+      "stop_sequence": null,
+      "usage": {
+        "input_tokens": 178,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 128,
+        "output_tokens": 73,
+        "service_tier": "standard"
+      }
+    }
+  }
+}

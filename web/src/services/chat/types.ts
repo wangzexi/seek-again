@@ -8,6 +8,8 @@ import type {
   StopReason,
   TextCitation,
 } from "../api/types.js";
+import type { ShellState } from "../agent/shell/protocol.js";
+import type { Commit } from "../workspace/layers.js";
 
 /**
  * 消息附件。id 是本地标识（IndexedDB files 表的主键，原件按它存储，所有引用同一 id 的消息共用一份），
@@ -25,11 +27,29 @@ export type FileAttachment = {
   mimeType: string;
 };
 
+/**
+ * 早期对话的压缩：发给模型的历史里，路径上 firstKeptMessageId 之前的轮次被 summary 取代。
+ * 界面和消息树完全不变，用户无感；只影响请求。
+ */
+export type Compaction = {
+  summary: string;
+  /** 保留部分的第一条提问；它之前的轮次已并入摘要 */
+  firstKeptMessageId: string;
+  /** 压缩前预估的上下文 token 数，仅供排查 */
+  tokensBefore: number;
+};
+
 /** 本地消息的分支关系；字段缺省时按线性消息列表处理。 */
 type MessageBranch = {
   parentId?: string | null;
   /** 当前选中的下一条消息；切换版本时保留每条分支原有的选择。 */
   selectedChildId?: string;
+  /**
+   * 压缩发生在“这条消息之后、下一条提问之前”：挂在提问前的最后一条消息上，所以同一个位置的
+   * 多个回复版本、编辑过的提问共用同一份摘要；路径不经过这条消息的分支用不到它。
+   * 只存在于本地，导出为标准格式时不包含。
+   */
+  compaction?: Compaction;
 };
 
 export type UserMessage = MessageBranch & {
@@ -71,6 +91,29 @@ export type ReplyBlock = ThinkingPart | TextPart | ServerToolBlock;
  */
 export type ReplyStatus = "pending" | "streaming" | "done" | "stopped" | "error";
 
+/** Agent 在浏览器里执行的一次工具调用；展示和提示用，不进入历史请求。 */
+export type AgentCall = {
+  /** 模型返回的 tool_use id */
+  id: string;
+  name: string;
+  input: unknown;
+  /** 调用发生时回复里已有的内容块数量，用来把调用插回时间线的正确位置 */
+  at: number;
+  /** running：执行中；done：成功；error：工具报错；stopped：停止或页面关闭时还没执行完 */
+  status: "running" | "done" | "error" | "stopped";
+  /** 返回给模型的文本（已截断），展开查看 */
+  output?: string;
+};
+
+export type AgentTrace = {
+  calls: AgentCall[];
+  /**
+   * 这个回复里最后一条 bash 命令结束时的状态（当前目录和变量）。下一轮从路径上最近的一份开始，
+   * 所以状态像文件一样随分支走，重载后也在。
+   */
+  shell?: ShellState;
+};
+
 export type AssistantMessage = MessageBranch & {
   id: string;
   role: "assistant";
@@ -92,6 +135,14 @@ export type AssistantMessage = MessageBranch & {
   stopDetails?: StopDetails;
   /** 最近一次请求的用量，续写后更新 */
   usage?: MessageUsage;
+  /** 本回复的工具调用轨迹；随这个回复版本保存，重新生成的新版本各有各的轨迹 */
+  agent?: AgentTrace;
+  /**
+   * 本回复写入对话目录的文件变化（路径到内容哈希，null 为删除）。
+   * 目录在某条消息之后的状态由根到该消息路径上的提交叠加得出，见 services/workspace/layers.ts。
+   * 只存在于本地，导出为标准格式时不包含。
+   */
+  commit?: Commit;
   error?: {
     /** upload：发送前补传附件失败，请求没有发出 */
     kind: ApiErrorKind | "upload";

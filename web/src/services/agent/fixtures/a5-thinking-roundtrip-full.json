@@ -1,0 +1,106 @@
+{
+  "name": "a5-thinking-roundtrip-full",
+  "recordedAt": "2026-11-16T18:04:50.034Z",
+  "model": "deepseek-flash",
+  "request": {
+    "method": "POST",
+    "path": "/messages",
+    "beta": false,
+    "body": {
+      "model": "deepseek-flash",
+      "max_tokens": 1024,
+      "system": "You are a helpful assistant.",
+      "thinking": {
+        "type": "enabled"
+      },
+      "tools": [
+        {
+          "name": "read_file",
+          "description": "Read a text file from the local virtual filesystem.",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string",
+                "description": "file path"
+              }
+            },
+            "required": [
+              "path"
+            ]
+          }
+        }
+      ],
+      "messages": [
+        {
+          "role": "user",
+          "content": "Use the read_file tool to read notes.txt, then tell me its first line."
+        },
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "thinking",
+              "thinking": "",
+              "signature": "c181ae35-aa68-428d-bfa9-a9ad70f56a9e"
+            },
+            {
+              "type": "text",
+              "text": "I'll read the file for you."
+            },
+            {
+              "type": "tool_use",
+              "id": "call_00_ET_aGqRBvAu0pAGRcmAaR2s5264",
+              "name": "read_file",
+              "input": {
+                "path": "notes.txt"
+              }
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "tool_result",
+              "tool_use_id": "call_00_ET_aGqRBvAu0pAGRcmAaR2s5264",
+              "content": "first line: HELLO-123\nsecond line: bye"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "id": "a0c1f846-b5b4-4861-8eb1-2fc43ca21f5d",
+      "type": "message",
+      "role": "assistant",
+      "model": "deepseek-flash",
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "The output shows the content. The first line is \"HELLO-123\".",
+          "signature": "a0c1f846-b5b4-4861-8eb1-2fc43ca21f5d"
+        },
+        {
+          "type": "text",
+          "text": "The first line of `notes.txt` is: **HELLO-123**"
+        }
+      ],
+      "stop_reason": "end_turn",
+      "stop_sequence": null,
+      "usage": {
+        "input_tokens": 137,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 256,
+        "output_tokens": 35,
+        "service_tier": "standard",
+        "output_tokens_details": {
+          "thinking_tokens": 17
+        }
+      }
+    }
+  }
+}

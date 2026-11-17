@@ -3,11 +3,17 @@ import { mergeImportedSession } from "./history/mergeSession.js";
 import { toSessionSummary, type Session, type SessionSummary } from "./types.js";
 
 /** IndexedDB 存储结构版本；新增或调整存储、索引时递增。 */
-const DB_VERSION = 11;
+const DB_VERSION = 12;
 
 /** 文件原件按附件的本地 id 存储，所有引用同一 id 的消息共用一份；用于缩略图、打开查看，以及没有 serverId 时补传。 */
 export type StoredFile = {
   id: string;
+  blob: Blob;
+};
+
+/** Agent 写入的文件内容，按内容哈希（SHA-256）存储，相同内容只存一份；先写内容、再在消息里记引用。 */
+export type StoredWorkspaceBlob = {
+  hash: string;
   blob: Blob;
 };
 
@@ -30,6 +36,8 @@ interface ChatDB extends DBSchema {
    */
   sessionsStaging: { key: string; value: Session };
   filesStaging: { key: string; value: StoredFile };
+  /** Agent 工作目录的文件内容；消息上的提交只保存路径到哈希的映射 */
+  workspaceBlobs: { key: string; value: StoredWorkspaceBlob };
 }
 
 let dbPromise: Promise<IDBPDatabase<ChatDB>> | null = null;
@@ -62,6 +70,9 @@ const getDB = () =>
         if (!db.objectStoreNames.contains(name)) {
           db.createObjectStore(name, { keyPath: "id" });
         }
+      }
+      if (!db.objectStoreNames.contains("workspaceBlobs")) {
+        db.createObjectStore("workspaceBlobs", { keyPath: "hash" });
       }
       const summaries = db.objectStoreNames.contains("sessionSummaries")
         ? tx.objectStore("sessionSummaries")
@@ -101,6 +112,13 @@ export const saveSession = async (session: Session, files: StoredFile[] = []): P
     tx.done,
   ]);
 };
+
+export const putWorkspaceBlob = async (hash: string, blob: Blob): Promise<void> => {
+  await (await getDB()).put("workspaceBlobs", { hash, blob });
+};
+
+export const getWorkspaceBlob = async (hash: string): Promise<Blob | undefined> =>
+  (await (await getDB()).get("workspaceBlobs", hash))?.blob;
 
 /** 未打开的会话也可重命名，只读取该会话，原子更新详情和列表。 */
 export const renameSession = async (id: string, title: string): Promise<void> => {

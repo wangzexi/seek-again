@@ -10,12 +10,13 @@
     "test:bdd:real": "BDD_MODE=real bun test tests/bdd",
     "dev": "bun --bun vite",
     "build": "bun --bun vite build",
-    "lint": "oxlint src tests vite.config.ts"
+    "lint": "oxlint src tests scripts vite.config.ts"
   },
   "dependencies": {
     "clsx": "2.1.1",
     "fflate": "0.8.3",
     "idb": "8.0.3",
+    "just-bash": "3.6.1",
     "katex": "0.16.22",
     "mdast-util-find-and-replace": "3.0.2",
     "mdast-util-from-markdown": "2.0.3",

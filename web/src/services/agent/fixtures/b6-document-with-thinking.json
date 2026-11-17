@@ -1,0 +1,68 @@
+{
+  "name": "b6-document-with-thinking",
+  "recordedAt": "2026-11-16T18:05:02.740Z",
+  "model": "deepseek-flash",
+  "request": {
+    "method": "POST",
+    "path": "/messages",
+    "beta": true,
+    "body": {
+      "model": "deepseek-flash",
+      "max_tokens": 1024,
+      "system": "You are a helpful assistant.",
+      "thinking": {
+        "type": "enabled"
+      },
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "document",
+              "source": {
+                "type": "file",
+                "file_id": "file-api-f9ecda95-0787-412a-a1c5-22c28b782cd4"
+              }
+            },
+            {
+              "type": "text",
+              "text": "What is the secret code word?"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "id": "3aaf2cd5-d4f5-4d7f-bceb-6a2aa67d716e",
+      "type": "message",
+      "role": "assistant",
+      "model": "deepseek-flash",
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "We need answer secret code word from file. Need simply \"SECRET-PDF-42\". Must not overcomplicate.",
+          "signature": "3aaf2cd5-d4f5-4d7f-bceb-6a2aa67d716e"
+        },
+        {
+          "type": "text",
+          "text": "SECRET-PDF-42"
+        }
+      ],
+      "stop_reason": "end_turn",
+      "stop_sequence": null,
+      "usage": {
+        "input_tokens": 79,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "output_tokens": 32,
+        "service_tier": "standard",
+        "output_tokens_details": {
+          "thinking_tokens": 25
+        }
+      }
+    }
+  }
+}

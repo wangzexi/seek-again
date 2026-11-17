@@ -15,8 +15,8 @@
     "dev": "bun run --cwd web dev",
     "build": "bun run --cwd web build",
     "lint": "bun run --cwd web lint",
-    "format": "oxfmt --write package.json web shared",
-    "format:check": "oxfmt --check package.json web shared",
+    "format": "oxfmt --write package.json web shared '!web/src/services/agent/fixtures/**'",
+    "format:check": "oxfmt --check package.json web shared '!web/src/services/agent/fixtures/**'",
     "start": "cargo run --locked --manifest-path server/Cargo.toml",
     "test:server": "cargo test --locked --manifest-path server/Cargo.toml"
   },

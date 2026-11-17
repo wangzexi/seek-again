@@ -1,0 +1,112 @@
+{
+  "name": "b5-document-in-following-user-message",
+  "recordedAt": "2026-11-16T18:05:01.871Z",
+  "model": "deepseek-flash",
+  "request": {
+    "method": "POST",
+    "path": "/messages",
+    "beta": true,
+    "body": {
+      "model": "deepseek-flash",
+      "max_tokens": 1024,
+      "system": "You are a helpful assistant.",
+      "thinking": {
+        "type": "disabled"
+      },
+      "tools": [
+        {
+          "name": "read_attachment",
+          "description": "Read an attached document. The file content will be provided to you.",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "purpose": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "path"
+            ]
+          }
+        }
+      ],
+      "messages": [
+        {
+          "role": "user",
+          "content": "Call read_attachment for report.pdf, then tell me the secret code word in it."
+        },
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "text",
+              "text": "I'll read the report for you."
+            },
+            {
+              "type": "tool_use",
+              "id": "call_00_OBiSNuaQRgCIVCQXfsPJ5885",
+              "name": "read_attachment",
+              "input": {
+                "path": "report.pdf",
+                "purpose": "Find the secret code word in the document"
+              }
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "tool_result",
+              "tool_use_id": "call_00_OBiSNuaQRgCIVCQXfsPJ5885",
+              "content": "Uploaded. The document follows in the next message."
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "document",
+              "source": {
+                "type": "file",
+                "file_id": "file-api-f9ecda95-0787-412a-a1c5-22c28b782cd4"
+              }
+            },
+            {
+              "type": "text",
+              "text": "Here is report.pdf."
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "id": "793d46c2-8edc-4192-a886-016642be7b41",
+      "type": "message",
+      "role": "assistant",
+      "model": "deepseek-flash",
+      "content": [
+        {
+          "type": "text",
+          "text": "The secret code word in report.pdf is: **SECRET-PDF-42**"
+        }
+      ],
+      "stop_reason": "end_turn",
+      "stop_sequence": null,
+      "usage": {
+        "input_tokens": 182,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 256,
+        "output_tokens": 17,
+        "service_tier": "standard"
+      }
+    }
+  }
+}

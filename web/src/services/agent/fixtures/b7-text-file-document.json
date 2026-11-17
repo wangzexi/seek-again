@@ -1,0 +1,60 @@
+{
+  "name": "b7-text-file-document",
+  "recordedAt": "2026-11-16T18:05:03.781Z",
+  "model": "deepseek-flash",
+  "request": {
+    "method": "POST",
+    "path": "/messages",
+    "beta": true,
+    "body": {
+      "model": "deepseek-flash",
+      "max_tokens": 1024,
+      "system": "You are a helpful assistant.",
+      "thinking": {
+        "type": "disabled"
+      },
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "document",
+              "source": {
+                "type": "file",
+                "file_id": "file-api-5bb0033a-ff9a-4924-ae78-298003d2a9fd"
+              }
+            },
+            {
+              "type": "text",
+              "text": "What is the first line?"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "id": "8e8d38f9-82c6-4a33-8e7f-865a7a124f3f",
+      "type": "message",
+      "role": "assistant",
+      "model": "deepseek-flash",
+      "content": [
+        {
+          "type": "text",
+          "text": "The first line is: HELLO-123"
+        }
+      ],
+      "stop_reason": "end_turn",
+      "stop_sequence": null,
+      "usage": {
+        "input_tokens": 48,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "output_tokens": 10,
+        "service_tier": "standard"
+      }
+    }
+  }
+}

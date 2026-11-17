@@ -1,0 +1,60 @@
+{
+  "name": "b3-document-direct",
+  "recordedAt": "2026-11-16T18:04:58.538Z",
+  "model": "deepseek-flash",
+  "request": {
+    "method": "POST",
+    "path": "/messages",
+    "beta": true,
+    "body": {
+      "model": "deepseek-flash",
+      "max_tokens": 1024,
+      "system": "You are a helpful assistant.",
+      "thinking": {
+        "type": "disabled"
+      },
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "document",
+              "source": {
+                "type": "file",
+                "file_id": "file-api-f9ecda95-0787-412a-a1c5-22c28b782cd4"
+              }
+            },
+            {
+              "type": "text",
+              "text": "What is the secret code word?"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "id": "355d52b7-9ed7-4724-9c88-49e8d5289d94",
+      "type": "message",
+      "role": "assistant",
+      "model": "deepseek-flash",
+      "content": [
+        {
+          "type": "text",
+          "text": "The secret code word is **SECRET-PDF-42**."
+        }
+      ],
+      "stop_reason": "end_turn",
+      "stop_sequence": null,
+      "usage": {
+        "input_tokens": 54,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "output_tokens": 13,
+        "service_tier": "standard"
+      }
+    }
+  }
+}
