@@ -1,4 +1,10 @@
-import { openDB, type DBSchema, type IDBPDatabase } from "idb";
+import {
+  openDB,
+  type DBSchema,
+  type IDBPDatabase,
+  type StoreNames,
+  type IDBPTransaction,
+} from "idb";
 import { mergeImportedSession } from "./history/mergeSession.js";
 import { toSessionSummary, type Session, type SessionSummary } from "./types.js";
 
@@ -54,8 +60,18 @@ const abortTransaction = (tx: { abort(): void }) => {
 };
 
 // 每个操作拿到连接后立即创建事务；IndexedDB 按创建顺序执行范围重叠的事务，读取总能看到之前发起的写入。
-const getDB = () =>
-  (dbPromise ??= openDB<ChatDB>("chat-demo", DB_VERSION, {
+const getDB = () => {
+  if (dbPromise) return dbPromise;
+  const reset = () => {
+    // 旧连接迟到的事件不能清除后来打开的新连接。
+    if (dbPromise === opening) dbPromise = null;
+  };
+  const opening = openDB<ChatDB>("chat-demo", DB_VERSION, {
+    terminated: reset,
+    blocking() {
+      reset();
+      void opening.then((db) => db.close());
+    },
     upgrade(db, _oldVersion, _newVersion, tx) {
       // 初始化当前格式需要的存储与索引，不迁移旧消息。
       for (const name of ["sessions", "files", "sessionsStaging", "filesStaging"] as const) {
@@ -72,19 +88,44 @@ const getDB = () =>
     },
   }).catch((error: unknown) => {
     // 打开失败后允许界面重试，避免一直复用已拒绝的 Promise。
-    dbPromise = null;
+    reset();
     throw error;
-  }));
+  });
+  dbPromise = opening;
+  return opening;
+};
+
+/** 只重试创建事务时的连接失效；此时尚未执行任何读写，避免重复提交事务。 */
+const transaction = async <
+  Names extends ArrayLike<StoreNames<ChatDB>>,
+  Mode extends IDBTransactionMode = "readonly",
+>(
+  stores: Names,
+  mode?: Mode,
+): Promise<IDBPTransaction<ChatDB, Names, Mode>> => {
+  for (let attempt = 0; ; attempt += 1) {
+    const opening = getDB();
+    const db = await opening;
+    try {
+      return db.transaction(stores, mode);
+    } catch (error) {
+      if (!(error instanceof DOMException) || error.name !== "InvalidStateError") throw error;
+      if (dbPromise === opening) dbPromise = null;
+      db.close();
+      if (attempt > 0) throw error;
+    }
+  }
+};
 
 export const loadSessionSummaries = async (): Promise<SessionSummary[]> =>
-  (await (await getDB()).getAll("sessionSummaries")).map(toSessionSummary);
+  (await (await transaction(["sessionSummaries"] as const)).store.getAll()).map(toSessionSummary);
 
 export const loadSession = async (id: string): Promise<Session | undefined> =>
-  (await getDB()).get("sessions", id);
+  (await transaction(["sessions"] as const)).store.get(id);
 
 export const saveSession = async (session: Session, files: StoredFile[] = []): Promise<void> => {
   const summary = storedSummary(session);
-  const tx = (await getDB()).transaction(["sessions", "sessionSummaries", "files"], "readwrite");
+  const tx = await transaction(["sessions", "sessionSummaries", "files"], "readwrite");
   await Promise.all([
     (async () => {
       try {
@@ -104,7 +145,7 @@ export const saveSession = async (session: Session, files: StoredFile[] = []): P
 
 /** 未打开的会话也可重命名，只读取该会话，原子更新详情和列表。 */
 export const renameSession = async (id: string, title: string): Promise<void> => {
-  const tx = (await getDB()).transaction(["sessions", "sessionSummaries"], "readwrite");
+  const tx = await transaction(["sessions", "sessionSummaries"], "readwrite");
   await Promise.all([
     (async () => {
       try {
@@ -126,7 +167,7 @@ export const renameSession = async (id: string, title: string): Promise<void> =>
 
 /** 删除会话，仅清理已无会话引用的本地原件；远端文件不删。 */
 export const deleteSession = async (sessionId: string): Promise<void> => {
-  const tx = (await getDB()).transaction(["sessions", "sessionSummaries", "files"], "readwrite");
+  const tx = await transaction(["sessions", "sessionSummaries", "files"], "readwrite");
   await Promise.all([
     (async () => {
       try {
@@ -149,18 +190,18 @@ export const deleteSession = async (sessionId: string): Promise<void> => {
 };
 
 const putFiles = async (store: "files" | "filesStaging", files: StoredFile[]) => {
-  const tx = (await getDB()).transaction(store, "readwrite");
+  const tx = await transaction([store] as const, "readwrite");
   await Promise.all([...files.map((file) => tx.store.put(file)), tx.done]);
 };
 
 export const saveFiles = (files: StoredFile[]): Promise<void> => putFiles("files", files);
 
 export const loadFile = async (id: string): Promise<Blob | undefined> =>
-  (await (await getDB()).get("files", id))?.blob;
+  (await (await transaction(["files"] as const)).store.get(id))?.blob;
 
 /** 清空导入暂存：开始导入前清除上次中断（如关闭页面）遗留的数据，导入失败后清除本次写入。 */
 export const clearStaging = async (): Promise<void> => {
-  const tx = (await getDB()).transaction(["sessionsStaging", "filesStaging"], "readwrite");
+  const tx = await transaction(["sessionsStaging", "filesStaging"], "readwrite");
   await Promise.all([
     tx.objectStore("sessionsStaging").clear(),
     tx.objectStore("filesStaging").clear(),
@@ -169,7 +210,8 @@ export const clearStaging = async (): Promise<void> => {
 };
 
 export const addStagingSession = async (session: Session): Promise<void> => {
-  await (await getDB()).add("sessionsStaging", session);
+  const tx = await transaction(["sessionsStaging"] as const, "readwrite");
+  await Promise.all([tx.store.add(session), tx.done]);
 };
 
 export const saveStagingFiles = (files: StoredFile[]): Promise<void> =>
@@ -177,7 +219,7 @@ export const saveStagingFiles = (files: StoredFile[]): Promise<void> =>
 
 /** 图片位于会话 JSON 之后；全部读完后回填具体 MIME，保留归档给出的 isImage 标识。 */
 export const updateStagingFileTypes = async (types: ReadonlyMap<string, string>): Promise<void> => {
-  const tx = (await getDB()).transaction("sessionsStaging", "readwrite");
+  const tx = await transaction(["sessionsStaging"] as const, "readwrite");
   await Promise.all([
     (async () => {
       for (let cursor = await tx.store.openCursor(); cursor; cursor = await cursor.continue()) {
@@ -212,7 +254,7 @@ export const commitStaging = async (mode: "replace" | "append") => {
   const summaries: SessionSummary[] = [];
   let skipped = 0;
   const updated = new Set<string>();
-  const tx = (await getDB()).transaction(
+  const tx = await transaction(
     ["sessions", "sessionSummaries", "files", "sessionsStaging", "filesStaging"],
     "readwrite",
   );
