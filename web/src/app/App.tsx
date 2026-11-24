@@ -36,7 +36,9 @@ export const App = () => {
   const siderCollapsed = useSettings((state) => state.siderCollapsed) && !isMobile;
   const ready = useChatStore((state) => state.ready);
   const initError = useChatStore((state) => state.initError);
-  const saveError = useChatStore((state) => Object.values(state.sessionSaveErrors).some(Boolean));
+  const saveError = useChatStore(
+    (state) => Object.values(state.sessionSaveErrors).find(Boolean) ?? "",
+  );
   const importingHistory = useChatStore((state) => state.importingHistory);
   const session = useChatStore((state) =>
     state.activeId !== null && Object.hasOwn(state.sessionCache, state.activeId)
@@ -83,6 +85,7 @@ export const App = () => {
           {saveError ? (
             <div className={styles.saveError} role="alert">
               <span>{t("sessionSaveFailed")}</span>
+              <code>{saveError}</code>
               <Button
                 variant="outlined"
                 size="s"

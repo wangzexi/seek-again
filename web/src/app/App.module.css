@@ -32,6 +32,10 @@
   font-size: 14px;
 }
 
+.saveError code {
+  overflow-wrap: anywhere;
+}
+
 .loadingView {
   position: absolute;
   inset: 0;

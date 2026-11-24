@@ -67,7 +67,7 @@ type ChatState = {
   sessions: SessionSummary[];
   sessionCache: Record<string, Session>;
   sessionLoadErrors: Record<string, boolean>;
-  sessionSaveErrors: Record<string, boolean>;
+  sessionSaveErrors: Record<string, string>;
   /** null 表示新对话（欢迎页） */
   activeId: string | null;
   /** 正在生成回复的会话 */
@@ -103,6 +103,9 @@ const getStreamController = (id: string) => {
 
 const sameSummary = (a: SessionSummary, b: SessionSummary) =>
   a.title === b.title && a.createdAt === b.createdAt && a.updatedAt === b.updatedAt;
+
+const getRawErrorMessage = (error: unknown): string =>
+  error instanceof Error ? error.message : String(error);
 
 const sessionAccess = new Map<string, number>();
 const unsavedSessions = new Set<string>();
@@ -210,7 +213,10 @@ const persist = (sessionId: string) => {
         db.reportStorageError("save session")(error);
         if (epoch === historyEpoch && getSession(sessionId)) {
           set((state) => ({
-            sessionSaveErrors: { ...state.sessionSaveErrors, [sessionId]: true },
+            sessionSaveErrors: {
+              ...state.sessionSaveErrors,
+              [sessionId]: getRawErrorMessage(error),
+            },
           }));
         }
       });
